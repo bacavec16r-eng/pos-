@@ -125,7 +125,7 @@ function Dashboard() {
                   <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip
-                    formatter={(v: number) => formatDA(v)}
+                    formatter={(v: any) => formatDA(Number(v))}
                     contentStyle={{ borderRadius: 6, fontSize: 12 }}
                   />
                   <Bar dataKey="total" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
@@ -144,7 +144,7 @@ function Dashboard() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => formatDA(v)} contentStyle={{ borderRadius: 6, fontSize: 12 }} />
+                  <Tooltip formatter={(v: any) => formatDA(Number(v))} contentStyle={{ borderRadius: 6, fontSize: 12 }} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>

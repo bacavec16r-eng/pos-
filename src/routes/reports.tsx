@@ -77,7 +77,7 @@ function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 0% / 0.06)" />
                 <XAxis dataKey="day" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(v: number) => formatDA(v)} contentStyle={{ borderRadius: 6, fontSize: 12 }} />
+                <Tooltip formatter={(v: any) => formatDA(Number(v))} contentStyle={{ borderRadius: 6, fontSize: 12 }} />
                 <Line type="monotone" dataKey="total" stroke="var(--color-primary)" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -91,7 +91,7 @@ function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 0% / 0.06)" />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(v: number) => formatDA(v)} contentStyle={{ borderRadius: 6, fontSize: 12 }} />
+                <Tooltip formatter={(v: any) => formatDA(Number(v))} contentStyle={{ borderRadius: 6, fontSize: 12 }} />
                 <Bar dataKey="total" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
