@@ -10,6 +10,9 @@ export type Product = {
   name: string;
   sku: string;
   categoryId: string;
+  brand?: string;
+  shade?: string;
+  volume?: string;
   purchasePrice: number;
   sellingPrice: number;
   stock: number;
@@ -20,6 +23,7 @@ export type Product = {
 export type CartLine = {
   productId: string;
   name: string;
+  brand?: string;
   unitPrice: number;
   quantity: number;
   image?: string;
@@ -27,7 +31,7 @@ export type CartLine = {
 
 export type Sale = {
   id: string;
-  date: string; // ISO
+  date: string;
   dayKey: string;
   lines: CartLine[];
   total: number;
@@ -61,7 +65,6 @@ type State = {
   debts: Debt[];
   settings: StoreSettings;
 
-  // mutations
   addCategory: (name: string) => void;
   updateCategory: (id: string, name: string) => void;
   deleteCategory: (id: string) => void;
@@ -73,11 +76,7 @@ type State = {
   findByBarcode: (code: string) => Product | undefined;
 
   recordSale: (lines: CartLine[]) => Sale;
-  recordCredit: (
-    customerName: string,
-    customerPhone: string,
-    lines: CartLine[]
-  ) => Debt;
+  recordCredit: (customerName: string, customerPhone: string, lines: CartLine[]) => Debt;
   addDebtPayment: (debtId: string, amount: number) => void;
 
   updateSettings: (s: Partial<StoreSettings>) => void;
@@ -86,37 +85,61 @@ type State = {
 };
 
 const seedCategories: Category[] = [
-  { id: "c_drinks", name: "Boissons" },
-  { id: "c_food", name: "Alimentation" },
-  { id: "c_dairy", name: "Produits laitiers" },
-  { id: "c_hygiene", name: "Hygiène" },
-  { id: "c_grocery", name: "Épicerie" },
+  { id: "c_makeup", name: "Maquillage" },
+  { id: "c_skincare", name: "Soin du visage" },
+  { id: "c_perfume", name: "Parfums" },
+  { id: "c_hair", name: "Cheveux" },
+  { id: "c_body", name: "Soin du corps" },
+  { id: "c_tools", name: "Accessoires beauté" },
+  { id: "c_nails", name: "Ongles" },
+  { id: "c_lips", name: "Lèvres" },
+  { id: "c_eyes", name: "Yeux" },
+  { id: "c_men", name: "Homme" },
+  { id: "c_gift", name: "Coffrets cadeaux" },
 ];
 
 const seedProducts: Product[] = [
-  { id: uid("p"), barcode: "6130000123456", name: "Coca-Cola 1L", sku: "COCA-1L", categoryId: "c_drinks", purchasePrice: 100, sellingPrice: 130, stock: 48, minStock: 12 },
-  { id: uid("p"), barcode: "6130000123457", name: "Coca-Cola 33cl", sku: "COCA-33", categoryId: "c_drinks", purchasePrice: 40, sellingPrice: 60, stock: 120, minStock: 24 },
-  { id: uid("p"), barcode: "6130000223456", name: "Hamoud Boualem 1L", sku: "HAMOUD-1L", categoryId: "c_drinks", purchasePrice: 90, sellingPrice: 120, stock: 36, minStock: 12 },
-  { id: uid("p"), barcode: "6130000223457", name: "Hamoud Selecto 1L", sku: "SELECTO-1L", categoryId: "c_drinks", purchasePrice: 95, sellingPrice: 125, stock: 8, minStock: 12 },
-  { id: uid("p"), barcode: "6130000323456", name: "Eau Minérale Ifri 1.5L", sku: "IFRI-15", categoryId: "c_drinks", purchasePrice: 30, sellingPrice: 50, stock: 200, minStock: 48 },
-  { id: uid("p"), barcode: "6130000423456", name: "Lait Candia 1L", sku: "LAIT-CAN", categoryId: "c_dairy", purchasePrice: 90, sellingPrice: 110, stock: 60, minStock: 20 },
-  { id: uid("p"), barcode: "6130000423457", name: "Lait Soummam 1L", sku: "LAIT-SOU", categoryId: "c_dairy", purchasePrice: 85, sellingPrice: 105, stock: 3, minStock: 20 },
-  { id: uid("p"), barcode: "6130000523456", name: "Yaourt Soummam 4x", sku: "YAO-4", categoryId: "c_dairy", purchasePrice: 110, sellingPrice: 150, stock: 24, minStock: 10 },
-  { id: uid("p"), barcode: "6130000623456", name: "Riz 1kg", sku: "RIZ-1KG", categoryId: "c_food", purchasePrice: 140, sellingPrice: 180, stock: 80, minStock: 20 },
-  { id: uid("p"), barcode: "6130000623457", name: "Riz 5kg", sku: "RIZ-5KG", categoryId: "c_food", purchasePrice: 650, sellingPrice: 850, stock: 25, minStock: 8 },
-  { id: uid("p"), barcode: "6130000723456", name: "Sucre 1kg", sku: "SUC-1KG", categoryId: "c_food", purchasePrice: 95, sellingPrice: 120, stock: 100, minStock: 25 },
-  { id: uid("p"), barcode: "6130000823456", name: "Huile Afia 5L", sku: "HUILE-5L", categoryId: "c_food", purchasePrice: 1200, sellingPrice: 1450, stock: 18, minStock: 6 },
-  { id: uid("p"), barcode: "6130000823457", name: "Huile Fleurial 1L", sku: "HUILE-1L", categoryId: "c_food", purchasePrice: 240, sellingPrice: 320, stock: 40, minStock: 12 },
-  { id: uid("p"), barcode: "6130000923456", name: "Café Bonal 250g", sku: "CAFE-250", categoryId: "c_grocery", purchasePrice: 380, sellingPrice: 480, stock: 22, minStock: 8 },
-  { id: uid("p"), barcode: "6130000923457", name: "Café Nescafé 200g", sku: "NES-200", categoryId: "c_grocery", purchasePrice: 850, sellingPrice: 1050, stock: 12, minStock: 5 },
-  { id: uid("p"), barcode: "6130001023456", name: "Pâtes Spaghetti 500g", sku: "PAT-500", categoryId: "c_food", purchasePrice: 80, sellingPrice: 110, stock: 90, minStock: 25 },
-  { id: uid("p"), barcode: "6130001123456", name: "Farine 1kg", sku: "FAR-1KG", categoryId: "c_food", purchasePrice: 70, sellingPrice: 95, stock: 70, minStock: 20 },
-  { id: uid("p"), barcode: "6130001223456", name: "Savon Le Chat", sku: "SAV-LC", categoryId: "c_hygiene", purchasePrice: 110, sellingPrice: 160, stock: 45, minStock: 15 },
-  { id: uid("p"), barcode: "6130001223457", name: "Dentifrice Signal", sku: "DENT-SIG", categoryId: "c_hygiene", purchasePrice: 180, sellingPrice: 250, stock: 28, minStock: 10 },
-  { id: uid("p"), barcode: "6130001323456", name: "Thé Vert Sultan", sku: "THE-VRT", categoryId: "c_grocery", purchasePrice: 150, sellingPrice: 210, stock: 35, minStock: 10 },
+  // Maybelline
+  { id: uid("p"), barcode: "3600531495123", name: "Fit Me Foundation 220", sku: "MAY-FM-220", categoryId: "c_makeup", brand: "Maybelline", shade: "Natural Beige", volume: "30ml", purchasePrice: 1100, sellingPrice: 1490, stock: 28, minStock: 8 },
+  { id: uid("p"), barcode: "3600531495124", name: "Sky High Mascara", sku: "MAY-SKY", categoryId: "c_eyes", brand: "Maybelline", volume: "7.2ml", purchasePrice: 950, sellingPrice: 1290, stock: 42, minStock: 10 },
+  { id: uid("p"), barcode: "3600531495125", name: "Super Stay Lipstick 015", sku: "MAY-SS-015", categoryId: "c_lips", brand: "Maybelline", shade: "Cherry", purchasePrice: 850, sellingPrice: 1190, stock: 35, minStock: 10 },
+  // L'Oréal
+  { id: uid("p"), barcode: "3600523715201", name: "Revitalift Sérum Hyaluronique", sku: "LOR-REV-SER", categoryId: "c_skincare", brand: "L'Oréal Paris", volume: "30ml", purchasePrice: 2200, sellingPrice: 2890, stock: 18, minStock: 6 },
+  { id: uid("p"), barcode: "3600523715202", name: "Hyaluron Expert Crème", sku: "LOR-HE-CRM", categoryId: "c_skincare", brand: "L'Oréal Paris", volume: "50ml", purchasePrice: 1800, sellingPrice: 2390, stock: 4, minStock: 6 },
+  { id: uid("p"), barcode: "3600523715203", name: "Elvive Shampoing Total Repair", sku: "LOR-ELV-TR", categoryId: "c_hair", brand: "L'Oréal Paris", volume: "400ml", purchasePrice: 480, sellingPrice: 690, stock: 60, minStock: 15 },
+  // Garnier
+  { id: uid("p"), barcode: "3600541234001", name: "Vitamin C Sérum", sku: "GAR-VITC", categoryId: "c_skincare", brand: "Garnier", volume: "30ml", purchasePrice: 1200, sellingPrice: 1690, stock: 22, minStock: 8 },
+  { id: uid("p"), barcode: "3600541234002", name: "Eau Micellaire Tout-en-1", sku: "GAR-MIC", categoryId: "c_skincare", brand: "Garnier", volume: "400ml", purchasePrice: 650, sellingPrice: 890, stock: 38, minStock: 10 },
+  // Nivea
+  { id: uid("p"), barcode: "4005900123001", name: "Nivea Soft Crème", sku: "NIV-SOFT", categoryId: "c_body", brand: "Nivea", volume: "200ml", purchasePrice: 380, sellingPrice: 550, stock: 80, minStock: 20 },
+  { id: uid("p"), barcode: "4005900123002", name: "Q10 Lotion Anti-Âge", sku: "NIV-Q10", categoryId: "c_body", brand: "Nivea", volume: "250ml", purchasePrice: 850, sellingPrice: 1190, stock: 24, minStock: 8 },
+  // Dove
+  { id: uid("p"), barcode: "8901030712001", name: "Dove Body Wash Original", sku: "DOV-BW", categoryId: "c_body", brand: "Dove", volume: "500ml", purchasePrice: 520, sellingPrice: 750, stock: 45, minStock: 12 },
+  { id: uid("p"), barcode: "8901030712002", name: "Dove Shampoing Nutrition", sku: "DOV-SH", categoryId: "c_hair", brand: "Dove", volume: "400ml", purchasePrice: 580, sellingPrice: 820, stock: 32, minStock: 10 },
+  // Yves Rocher
+  { id: uid("p"), barcode: "3660005412301", name: "Yves Rocher Comme une Évidence EDP", sku: "YR-EVI", categoryId: "c_perfume", brand: "Yves Rocher", volume: "50ml", purchasePrice: 3200, sellingPrice: 4290, stock: 12, minStock: 4 },
+  // Lattafa
+  { id: uid("p"), barcode: "6291108731001", name: "Lattafa Yara EDP", sku: "LAT-YARA", categoryId: "c_perfume", brand: "Lattafa", volume: "100ml", purchasePrice: 2800, sellingPrice: 3990, stock: 20, minStock: 6 },
+  { id: uid("p"), barcode: "6291108731002", name: "Lattafa Asad EDP", sku: "LAT-ASAD", categoryId: "c_perfume", brand: "Lattafa", volume: "100ml", purchasePrice: 3100, sellingPrice: 4290, stock: 3, minStock: 6 },
+  // Ard Al Zaafaran
+  { id: uid("p"), barcode: "6291107841001", name: "Ard Al Zaafaran Dirham EDP", sku: "AAZ-DIR", categoryId: "c_perfume", brand: "Ard Al Zaafaran", volume: "100ml", purchasePrice: 2400, sellingPrice: 3490, stock: 15, minStock: 5 },
+  // Huda Beauty
+  { id: uid("p"), barcode: "6291108551001", name: "Huda Faux Filter Foundation", sku: "HUD-FAUX", categoryId: "c_makeup", brand: "Huda Beauty", shade: "Toffee 400N", volume: "35ml", purchasePrice: 4200, sellingPrice: 5490, stock: 9, minStock: 4 },
+  { id: uid("p"), barcode: "6291108551002", name: "Huda Lip Contour Matte", sku: "HUD-LIPC", categoryId: "c_lips", brand: "Huda Beauty", shade: "Vixen", purchasePrice: 1900, sellingPrice: 2590, stock: 14, minStock: 5 },
+  // The Ordinary
+  { id: uid("p"), barcode: "0769915190001", name: "The Ordinary Niacinamide 10% + Zinc 1%", sku: "TO-NIA10", categoryId: "c_skincare", brand: "The Ordinary", volume: "30ml", purchasePrice: 950, sellingPrice: 1390, stock: 26, minStock: 8 },
+  { id: uid("p"), barcode: "0769915190002", name: "The Ordinary Hyaluronic Acid 2% + B5", sku: "TO-HA2", categoryId: "c_skincare", brand: "The Ordinary", volume: "30ml", purchasePrice: 1050, sellingPrice: 1490, stock: 19, minStock: 8 },
+  // Nail care
+  { id: uid("p"), barcode: "5000167234001", name: "Vernis à Ongles Rose Glow", sku: "NL-ROSE", categoryId: "c_nails", brand: "Belle Studio", shade: "Rose Glow", volume: "12ml", purchasePrice: 220, sellingPrice: 390, stock: 55, minStock: 15 },
+  // Tools
+  { id: uid("p"), barcode: "5000167234002", name: "Pinceau Fond de Teint Pro", sku: "TL-BRUSH", categoryId: "c_tools", brand: "Belle Studio", purchasePrice: 380, sellingPrice: 590, stock: 28, minStock: 8 },
+  { id: uid("p"), barcode: "5000167234003", name: "Éponge Beauty Blender", sku: "TL-SPONGE", categoryId: "c_tools", brand: "Belle Studio", purchasePrice: 250, sellingPrice: 450, stock: 40, minStock: 12 },
+  // Men
+  { id: uid("p"), barcode: "4005900778001", name: "Nivea Men Sensitive After Shave", sku: "NIV-M-AS", categoryId: "c_men", brand: "Nivea Men", volume: "100ml", purchasePrice: 480, sellingPrice: 690, stock: 22, minStock: 8 },
+  // Gift set
+  { id: uid("p"), barcode: "9990000001234", name: "Coffret Cadeau Beauté Rose", sku: "GIFT-ROSE", categoryId: "c_gift", brand: "Belle Studio", purchasePrice: 2800, sellingPrice: 4290, stock: 8, minStock: 3 },
 ];
 
-// Seed a few past sales so dashboard has data
 function seedSales(): Sale[] {
   const out: Sale[] = [];
   const now = new Date();
@@ -129,28 +152,21 @@ function seedSales(): Sale[] {
       const items = 1 + Math.floor(Math.random() * 3);
       for (let j = 0; j < items; j++) {
         const p = seedProducts[Math.floor(Math.random() * seedProducts.length)];
-        const q = 1 + Math.floor(Math.random() * 3);
-        lines.push({ productId: p.id, name: p.name, unitPrice: p.sellingPrice, quantity: q, image: p.image });
+        const q = 1 + Math.floor(Math.random() * 2);
+        lines.push({ productId: p.id, name: p.name, brand: p.brand, unitPrice: p.sellingPrice, quantity: q, image: p.image });
       }
       const total = lines.reduce((a, l) => a + l.unitPrice * l.quantity, 0);
-      out.push({
-        id: uid("s"),
-        date: d.toISOString(),
-        dayKey: todayKey(d),
-        lines,
-        total,
-        type: "cash",
-      });
+      out.push({ id: uid("s"), date: d.toISOString(), dayKey: todayKey(d), lines, total, type: "cash" });
     }
   }
   return out;
 }
 
 const defaultSettings: StoreSettings = {
-  storeName: "Supérette El Djazair",
-  storeAddress: "Alger, Algérie",
+  storeName: "Belle Beauté",
+  storeAddress: "Alger Centre, Algérie",
   storePhone: "0555 00 00 00",
-  invoiceFooter: "Merci pour votre visite !",
+  invoiceFooter: "Merci pour votre confiance — Restez belle ✨",
 };
 
 export const useStore = create<State>()(
@@ -165,18 +181,13 @@ export const useStore = create<State>()(
       addCategory: (name) =>
         set((s) => ({ categories: [...s.categories, { id: uid("c"), name }] })),
       updateCategory: (id, name) =>
-        set((s) => ({
-          categories: s.categories.map((c) => (c.id === id ? { ...c, name } : c)),
-        })),
+        set((s) => ({ categories: s.categories.map((c) => (c.id === id ? { ...c, name } : c)) })),
       deleteCategory: (id) =>
         set((s) => ({ categories: s.categories.filter((c) => c.id !== id) })),
 
-      addProduct: (p) =>
-        set((s) => ({ products: [{ ...p, id: uid("p") }, ...s.products] })),
+      addProduct: (p) => set((s) => ({ products: [{ ...p, id: uid("p") }, ...s.products] })),
       updateProduct: (id, patch) =>
-        set((s) => ({
-          products: s.products.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-        })),
+        set((s) => ({ products: s.products.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
       deleteProduct: (id) =>
         set((s) => ({ products: s.products.filter((p) => p.id !== id) })),
 
@@ -184,14 +195,7 @@ export const useStore = create<State>()(
 
       recordSale: (lines) => {
         const total = lines.reduce((a, l) => a + l.unitPrice * l.quantity, 0);
-        const sale: Sale = {
-          id: uid("s"),
-          date: new Date().toISOString(),
-          dayKey: todayKey(),
-          lines,
-          total,
-          type: "cash",
-        };
+        const sale: Sale = { id: uid("s"), date: new Date().toISOString(), dayKey: todayKey(), lines, total, type: "cash" };
         set((s) => ({
           sales: [sale, ...s.sales],
           products: s.products.map((p) => {
@@ -204,24 +208,8 @@ export const useStore = create<State>()(
 
       recordCredit: (customerName, customerPhone, lines) => {
         const total = lines.reduce((a, l) => a + l.unitPrice * l.quantity, 0);
-        const debt: Debt = {
-          id: uid("d"),
-          customerName,
-          customerPhone,
-          createdAt: new Date().toISOString(),
-          lines,
-          total,
-          payments: [],
-        };
-        const sale: Sale = {
-          id: uid("s"),
-          date: new Date().toISOString(),
-          dayKey: todayKey(),
-          lines,
-          total,
-          type: "credit",
-          customerId: debt.id,
-        };
+        const debt: Debt = { id: uid("d"), customerName, customerPhone, createdAt: new Date().toISOString(), lines, total, payments: [] };
+        const sale: Sale = { id: uid("s"), date: new Date().toISOString(), dayKey: todayKey(), lines, total, type: "credit", customerId: debt.id };
         set((s) => ({
           debts: [debt, ...s.debts],
           sales: [sale, ...s.sales],
@@ -237,19 +225,12 @@ export const useStore = create<State>()(
         set((s) => ({
           debts: s.debts.map((d) =>
             d.id === debtId
-              ? {
-                  ...d,
-                  payments: [
-                    ...d.payments,
-                    { id: uid("pay"), date: new Date().toISOString(), amount },
-                  ],
-                }
+              ? { ...d, payments: [...d.payments, { id: uid("pay"), date: new Date().toISOString(), amount }] }
               : d
           ),
         })),
 
-      updateSettings: (patch) =>
-        set((s) => ({ settings: { ...s.settings, ...patch } })),
+      updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       resetAll: () =>
         set({
@@ -269,7 +250,7 @@ export const useStore = create<State>()(
           settings: data.settings ?? s.settings,
         })),
     }),
-    { name: "djz-market-pos" }
+    { name: "belle-beaute-pos-v1" }
   )
 );
 

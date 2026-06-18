@@ -12,7 +12,7 @@ import { useStore, type CartLine, type Product } from "@/lib/store";
 import { formatDA } from "@/lib/format";
 
 export const Route = createFileRoute("/pos")({
-  head: () => ({ meta: [{ title: "Caisse — Djazair Market POS" }] }),
+  head: () => ({ meta: [{ title: "Caisse — Belle Beauté POS" }] }),
   component: POSPage,
 });
 
@@ -44,6 +44,7 @@ function POSPage() {
       return (
         p.name.toLowerCase().includes(q) ||
         p.sku.toLowerCase().includes(q) ||
+        (p.brand?.toLowerCase().includes(q) ?? false) ||
         p.barcode.includes(q)
       );
     });
@@ -68,6 +69,7 @@ function POSPage() {
         {
           productId: p.id,
           name: p.name,
+          brand: p.brand,
           unitPrice: p.sellingPrice,
           quantity: qty,
           image: p.image,
@@ -204,18 +206,19 @@ function POSPage() {
                     type="button"
                     disabled={out}
                     onClick={() => addToCart(p)}
-                    className={`group text-start bg-card border rounded-md p-2 hover:border-primary hover:shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`group text-start bg-card border rounded-lg p-2 hover:border-primary hover:shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    <div className="aspect-square w-full rounded bg-muted flex items-center justify-center overflow-hidden mb-2">
+                    <div className="aspect-square w-full rounded-md bg-accent/40 flex items-center justify-center overflow-hidden mb-2">
                       {p.image ? (
                         <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
                       ) : (
-                        <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                        <ImageIcon className="h-8 w-8 text-primary/40" />
                       )}
                     </div>
+                    {p.brand && <div className="brand-badge mb-1">{p.brand}</div>}
                     <div className="text-xs font-medium line-clamp-2 min-h-[2rem]">{p.name}</div>
                     <div className="mt-1 flex items-center justify-between">
-                      <div className="text-sm font-bold num">{formatDA(p.sellingPrice)}</div>
+                      <div className="text-sm font-bold num text-primary">{formatDA(p.sellingPrice)}</div>
                       <StockBadge stock={p.stock} min={p.minStock} />
                     </div>
                     <div className="text-[10px] text-muted-foreground mt-0.5 num">
@@ -274,10 +277,13 @@ function POSPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between gap-2">
-                        <div className="text-sm font-medium truncate">{l.name}</div>
+                        <div className="min-w-0">
+                          {l.brand && <div className="brand-badge mb-0.5">{l.brand}</div>}
+                          <div className="text-sm font-medium truncate">{l.name}</div>
+                        </div>
                         <button
                           onClick={() => remove(l.productId)}
-                          className="text-muted-foreground hover:text-destructive"
+                          className="text-muted-foreground hover:text-destructive shrink-0"
                           aria-label="Remove"
                         >
                           <X className="h-4 w-4" />

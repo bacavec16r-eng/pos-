@@ -9,7 +9,7 @@ import { useStore, debtRemaining, type Debt } from "@/lib/store";
 import { formatDA } from "@/lib/format";
 
 export const Route = createFileRoute("/customers")({
-  head: () => ({ meta: [{ title: "Crédits clients — Djazair Market POS" }] }),
+  head: () => ({ meta: [{ title: "Crédits clients — Belle Beauté POS" }] }),
   component: CustomersPage,
 });
 

@@ -3,19 +3,19 @@ import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   ScanBarcode,
-  Package,
+  Sparkles,
   Tags,
   Boxes,
   Users,
   BarChart3,
   Settings,
-  Store,
+  Flower2,
 } from "lucide-react";
 
 const items = [
   { to: "/", icon: LayoutDashboard, key: "dashboard" },
   { to: "/pos", icon: ScanBarcode, key: "pos" },
-  { to: "/products", icon: Package, key: "products" },
+  { to: "/products", icon: Sparkles, key: "products" },
   { to: "/categories", icon: Tags, key: "categories" },
   { to: "/inventory", icon: Boxes, key: "inventory" },
   { to: "/customers", icon: Users, key: "customers" },
@@ -30,8 +30,8 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex w-56 shrink-0 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       <div className="h-14 flex items-center gap-2 px-4 border-b border-sidebar-border">
-        <div className="h-8 w-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center">
-          <Store className="h-4 w-4" />
+        <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
+          <Flower2 className="h-5 w-5" />
         </div>
         <div className="leading-tight">
           <div className="text-sm font-semibold">{t("app.name")}</div>

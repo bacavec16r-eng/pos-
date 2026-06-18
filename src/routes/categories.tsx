@@ -7,7 +7,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/categories")({
-  head: () => ({ meta: [{ title: "Catégories — Djazair Market POS" }] }),
+  head: () => ({ meta: [{ title: "Catégories — Belle Beauté POS" }] }),
   component: CategoriesPage,
 });
 
