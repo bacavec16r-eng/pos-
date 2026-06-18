@@ -4,7 +4,7 @@ import { initReactI18next } from "react-i18next";
 const resources = {
   fr: {
     translation: {
-      app: { name: "Djazair Market POS", tagline: "Logiciel de caisse" },
+      app: { name: "Belle Beauté POS", tagline: "Gestion beauté & cosmétiques" },
       nav: {
         dashboard: "Tableau de bord",
         pos: "Caisse / Ventes",
@@ -62,8 +62,11 @@ const resources = {
         addProduct: "Ajouter un produit",
         editProduct: "Modifier le produit",
         barcode: "Code-barres",
-        sku: "SKU",
+        sku: "Référence",
         category: "Catégorie",
+        brand: "Marque",
+        shade: "Teinte",
+        volume: "Contenance",
         purchasePrice: "Prix d'achat",
         sellingPrice: "Prix de vente",
         currentStock: "Stock actuel",
@@ -136,7 +139,7 @@ const resources = {
   },
   ar: {
     translation: {
-      app: { name: "جزائر ماركت POS", tagline: "برنامج الصندوق" },
+      app: { name: "بيل بوتيه", tagline: "إدارة متجر التجميل والعطور" },
       nav: {
         dashboard: "لوحة التحكم",
         pos: "الصندوق / المبيعات",
@@ -194,8 +197,11 @@ const resources = {
         addProduct: "إضافة منتج",
         editProduct: "تعديل المنتج",
         barcode: "الباركود",
-        sku: "SKU",
+        sku: "المرجع",
         category: "الفئة",
+        brand: "العلامة التجارية",
+        shade: "اللون / الدرجة",
+        volume: "الحجم",
         purchasePrice: "سعر الشراء",
         sellingPrice: "سعر البيع",
         currentStock: "المخزون الحالي",
@@ -268,7 +274,7 @@ const resources = {
   },
   en: {
     translation: {
-      app: { name: "Djazair Market POS", tagline: "Cashier software" },
+      app: { name: "Belle Beauté POS", tagline: "Beauty & cosmetics manager" },
       nav: {
         dashboard: "Dashboard",
         pos: "POS / Sales",
@@ -328,6 +334,9 @@ const resources = {
         barcode: "Barcode",
         sku: "SKU",
         category: "Category",
+        brand: "Brand",
+        shade: "Shade",
+        volume: "Volume",
         purchasePrice: "Purchase price",
         sellingPrice: "Selling price",
         currentStock: "Current stock",
@@ -401,7 +410,7 @@ const resources = {
 };
 
 const savedLang =
-  typeof window !== "undefined" ? localStorage.getItem("djz-lang") || "fr" : "fr";
+  typeof window !== "undefined" ? localStorage.getItem("belle-lang") || "fr" : "fr";
 
 if (!i18n.isInitialized) {
   i18n.use(initReactI18next).init({
@@ -415,7 +424,7 @@ if (!i18n.isInitialized) {
 export function setLanguage(lng: "fr" | "ar" | "en") {
   i18n.changeLanguage(lng);
   if (typeof window !== "undefined") {
-    localStorage.setItem("djz-lang", lng);
+    localStorage.setItem("belle-lang", lng);
     document.documentElement.lang = lng;
     document.documentElement.dir = lng === "ar" ? "rtl" : "ltr";
   }
