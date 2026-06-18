@@ -9,7 +9,7 @@ import { useStore, type Product } from "@/lib/store";
 import { formatDA } from "@/lib/format";
 
 export const Route = createFileRoute("/products")({
-  head: () => ({ meta: [{ title: "Produits — Djazair Market POS" }] }),
+  head: () => ({ meta: [{ title: "Produits — Belle Beauté POS" }] }),
   component: ProductsPage,
 });
 
@@ -18,6 +18,9 @@ const emptyForm: Omit<Product, "id"> = {
   name: "",
   sku: "",
   categoryId: "",
+  brand: "",
+  shade: "",
+  volume: "",
   purchasePrice: 0,
   sellingPrice: 0,
   stock: 0,
@@ -45,6 +48,7 @@ function ProductsPage() {
       (p) =>
         p.name.toLowerCase().includes(s) ||
         p.sku.toLowerCase().includes(s) ||
+        (p.brand?.toLowerCase().includes(s) ?? false) ||
         p.barcode.includes(s)
     );
   }, [products, q]);
@@ -103,8 +107,8 @@ function ProductsPage() {
               <tr>
                 <th className="px-3 py-2 text-start"></th>
                 <th className="px-3 py-2 text-start">{t("common.name")}</th>
+                <th className="px-3 py-2 text-start">{t("products.brand")}</th>
                 <th className="px-3 py-2 text-start">{t("products.barcode")}</th>
-                <th className="px-3 py-2 text-start">{t("products.sku")}</th>
                 <th className="px-3 py-2 text-start">{t("products.category")}</th>
                 <th className="px-3 py-2 text-end">{t("products.purchasePrice")}</th>
                 <th className="px-3 py-2 text-end">{t("products.sellingPrice")}</th>
@@ -126,9 +130,14 @@ function ProductsPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2 font-medium">{p.name}</td>
+                    <td className="px-3 py-2">
+                      <div className="font-medium">{p.name}</div>
+                      {p.shade && <div className="text-[11px] text-muted-foreground">{p.shade}{p.volume ? ` · ${p.volume}` : ""}</div>}
+                    </td>
+                    <td className="px-3 py-2">
+                      {p.brand ? <span className="brand-badge">{p.brand}</span> : <span className="text-muted-foreground text-xs">—</span>}
+                    </td>
                     <td className="px-3 py-2 num text-xs text-muted-foreground">{p.barcode}</td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{p.sku}</td>
                     <td className="px-3 py-2">{cat}</td>
                     <td className="px-3 py-2 text-end num">{formatDA(p.purchasePrice)}</td>
                     <td className="px-3 py-2 text-end num font-medium">{formatDA(p.sellingPrice)}</td>
@@ -199,11 +208,8 @@ function ProductsPage() {
               <FormField label={t("common.name")} className="col-span-2">
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="inp" />
               </FormField>
-              <FormField label={t("products.barcode")}>
-                <input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="inp num" />
-              </FormField>
-              <FormField label={t("products.sku")}>
-                <input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="inp" />
+              <FormField label={t("products.brand")}>
+                <input value={form.brand ?? ""} onChange={(e) => setForm({ ...form, brand: e.target.value })} className="inp" />
               </FormField>
               <FormField label={t("products.category")}>
                 <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="inp">
@@ -212,7 +218,19 @@ function ProductsPage() {
                   ))}
                 </select>
               </FormField>
-              <FormField label={t("products.image")}>
+              <FormField label={t("products.shade")}>
+                <input value={form.shade ?? ""} onChange={(e) => setForm({ ...form, shade: e.target.value })} className="inp" />
+              </FormField>
+              <FormField label={t("products.volume")}>
+                <input value={form.volume ?? ""} onChange={(e) => setForm({ ...form, volume: e.target.value })} className="inp" placeholder="ex. 50ml" />
+              </FormField>
+              <FormField label={t("products.barcode")}>
+                <input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="inp num" />
+              </FormField>
+              <FormField label={t("products.sku")}>
+                <input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="inp" />
+              </FormField>
+              <FormField label={t("products.image")} className="col-span-2">
                 <input value={form.image ?? ""} onChange={(e) => setForm({ ...form, image: e.target.value })} className="inp" placeholder="https://…" />
               </FormField>
               <FormField label={t("products.purchasePrice")}>
