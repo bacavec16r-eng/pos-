@@ -10,7 +10,7 @@ import { useStore, debtRemaining } from "@/lib/store";
 import { formatDA, todayKey, monthKey } from "@/lib/format";
 
 export const Route = createFileRoute("/reports")({
-  head: () => ({ meta: [{ title: "Rapports — Djazair Market POS" }] }),
+  head: () => ({ meta: [{ title: "Rapports — Belle Beauté POS" }] }),
   component: ReportsPage,
 });
 

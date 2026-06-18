@@ -7,7 +7,7 @@ import { useStore } from "@/lib/store";
 import { formatDA } from "@/lib/format";
 
 export const Route = createFileRoute("/inventory")({
-  head: () => ({ meta: [{ title: "Inventaire — Djazair Market POS" }] }),
+  head: () => ({ meta: [{ title: "Inventaire — Belle Beauté POS" }] }),
   component: InventoryPage,
 });
 

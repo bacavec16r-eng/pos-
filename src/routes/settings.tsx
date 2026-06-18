@@ -8,7 +8,7 @@ import { useStore } from "@/lib/store";
 import { setLanguage } from "@/lib/i18n";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Paramètres — Djazair Market POS" }] }),
+  head: () => ({ meta: [{ title: "Paramètres — Belle Beauté POS" }] }),
   component: SettingsPage,
 });
 
