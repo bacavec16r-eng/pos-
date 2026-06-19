@@ -1,0 +1,33 @@
+[package]
+name = "belle_beaute_pos"
+version = "1.0.0"
+description = "Belle Beauté POS - Professional offline desktop application for cosmetics store management"
+authors = ["bacavec16r-eng"]
+license = "MIT"
+repository = ""
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0", features = ["shell-open"] }
+tauri-plugin-dialog = "2.0"
+tauri-plugin-fs = "2.0"
+tauri-plugin-shell = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rusqlite = { version = "0.31", features = ["bundled"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+tokio = { version = "1", features = ["full"] }
+zip = "0.6"
+rand = "0.8"
+
+[features]
+default = ["shell-open"]
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
