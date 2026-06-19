@@ -5,3 +5,4 @@ pub mod auth;
 pub mod inventory;
 pub mod customers;
 pub mod reports;
+pub mod receipt;
