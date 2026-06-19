@@ -10,6 +10,7 @@ import {
   BarChart3,
   Settings,
   Flower2,
+  Truck,
 } from "lucide-react";
 
 const items = [
@@ -18,6 +19,7 @@ const items = [
   { to: "/products", icon: Sparkles, key: "products" },
   { to: "/categories", icon: Tags, key: "categories" },
   { to: "/inventory", icon: Boxes, key: "inventory" },
+  { to: "/suppliers", icon: Truck, key: "suppliers" },
   { to: "/customers", icon: Users, key: "customers" },
   { to: "/reports", icon: BarChart3, key: "reports" },
   { to: "/settings", icon: Settings, key: "settings" },
@@ -63,7 +65,7 @@ export function Sidebar() {
       </nav>
 
       <div className="px-4 py-3 text-[11px] text-sidebar-foreground/50 border-t border-sidebar-border">
-        v1.0 · Offline
+        v1.1 · Offline
       </div>
     </aside>
   );

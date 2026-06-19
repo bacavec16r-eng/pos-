@@ -5,12 +5,12 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import {
-  TrendingUp, Calendar, AlertTriangle, Wallet, ScanBarcode, ArrowRight,
+  TrendingUp, Calendar, AlertTriangle, Wallet, ScanBarcode, ArrowRight, CalendarClock,
 } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
-import { useStore, debtRemaining } from "@/lib/store";
-import { formatDA, todayKey, monthKey } from "@/lib/format";
+import { useStore, debtRemaining, productTotalStock } from "@/lib/store";
+import { formatDA, todayKey, monthKey, daysUntil, formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Tableau de bord — Belle Beauté POS" }] }),
@@ -35,8 +35,29 @@ function Dashboard() {
   const salesMonth = sales
     .filter((s) => s.dayKey.startsWith(month))
     .reduce((a, s) => a + s.total, 0);
-  const lowStock = products.filter((p) => p.stock <= p.minStock).length;
+  const lowStock = products.filter((p) => productTotalStock(p) <= p.minStock).length;
   const unpaid = debts.reduce((a, d) => a + debtRemaining(d), 0);
+
+  // Near-expiry items, within 60 days or expired
+  const nearExpiry = (() => {
+    type Row = { id: string; name: string; variantName?: string; expiryDate: string; days: number };
+    const rows: Row[] = [];
+    for (const p of products) {
+      if (p.expiryDate) {
+        const d = daysUntil(p.expiryDate);
+        if (d !== null && d <= 60) rows.push({ id: p.id, name: p.name, expiryDate: p.expiryDate, days: d });
+      }
+      if (p.variants) {
+        for (const v of p.variants) {
+          if (v.expiryDate) {
+            const d = daysUntil(v.expiryDate);
+            if (d !== null && d <= 60) rows.push({ id: `${p.id}:${v.id}`, name: p.name, variantName: v.name, expiryDate: v.expiryDate, days: d });
+          }
+        }
+      }
+    }
+    return rows.sort((a, b) => a.days - b.days);
+  })();
 
   // Daily 7-day revenue
   const days: { day: string; total: number }[] = [];
@@ -107,12 +128,41 @@ function Dashboard() {
         </Link>
 
         {/* KPI cards */}
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
           <Kpi icon={<TrendingUp className="h-4 w-4" />} label={t("dashboard.salesToday")} value={formatDA(salesToday)} tone="success" />
           <Kpi icon={<Calendar className="h-4 w-4" />} label={t("dashboard.salesMonth")} value={formatDA(salesMonth)} tone="primary" />
           <Kpi icon={<AlertTriangle className="h-4 w-4" />} label={t("dashboard.lowStockCount")} value={lowStock.toString()} tone="warning" />
+          <Kpi icon={<CalendarClock className="h-4 w-4" />} label={t("dashboard.nearExpiry")} value={nearExpiry.length.toString()} tone="destructive" />
           <Kpi icon={<Wallet className="h-4 w-4" />} label={t("dashboard.unpaidDebts")} value={formatDA(unpaid)} tone="destructive" />
         </div>
+
+        {/* Near expiry widget */}
+        {nearExpiry.length > 0 && (
+          <div className="rounded-md border bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b flex items-center justify-between">
+              <div className="text-sm font-semibold flex items-center gap-2">
+                <CalendarClock className="h-4 w-4 text-destructive" /> {t("dashboard.nearExpiry")}
+              </div>
+              <Link to="/inventory" className="text-xs text-primary hover:underline">→</Link>
+            </div>
+            <ul className="divide-y">
+              {nearExpiry.slice(0, 5).map((r) => (
+                <li key={r.id} className="px-4 py-2 flex items-center justify-between text-sm">
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{r.name}</div>
+                    {r.variantName && <div className="text-[11px] text-muted-foreground">{r.variantName}</div>}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xs text-muted-foreground num">{formatDate(r.expiryDate)}</span>
+                    <span className={`text-xs font-semibold num px-2 py-0.5 rounded ${r.days < 0 ? "bg-destructive text-destructive-foreground" : r.days <= 30 ? "bg-destructive/15 text-destructive" : "bg-warning/20 text-warning-foreground"}`}>
+                      {r.days < 0 ? `Expiré ${Math.abs(r.days)}j` : `${r.days}j`}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Charts */}
         <div className="grid gap-3 lg:grid-cols-3">

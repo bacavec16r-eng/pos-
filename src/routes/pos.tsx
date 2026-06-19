@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
-import { useStore, type CartLine, type Product } from "@/lib/store";
+import { useStore, productTotalStock, variantPrice, type CartLine, type Product, type ProductVariant } from "@/lib/store";
 import { formatDA } from "@/lib/format";
 
 export const Route = createFileRoute("/pos")({
@@ -30,11 +30,10 @@ function POSPage() {
   const [creditOpen, setCreditOpen] = useState(false);
   const [custName, setCustName] = useState("");
   const [custPhone, setCustPhone] = useState("");
+  const [variantPick, setVariantPick] = useState<Product | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    searchRef.current?.focus();
-  }, []);
+  useEffect(() => { searchRef.current?.focus(); }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -45,48 +44,52 @@ function POSPage() {
         p.name.toLowerCase().includes(q) ||
         p.sku.toLowerCase().includes(q) ||
         (p.brand?.toLowerCase().includes(q) ?? false) ||
-        p.barcode.includes(q)
+        p.barcode.includes(q) ||
+        (p.variants?.some((v) => v.barcode.includes(q) || v.name.toLowerCase().includes(q)) ?? false)
       );
     });
   }, [products, search, activeCat]);
 
-  const addToCart = (p: Product, qty = 1) => {
-    if (p.stock <= 0) {
-      toast.error(`${p.name} — ${t("inventory.outOfStock")}`);
+  const addLine = (p: Product, v?: ProductVariant, qty = 1) => {
+    const stock = v ? v.stock : (p.variants && p.variants.length > 0 ? productTotalStock(p) : p.stock);
+    if (stock <= 0) {
+      toast.error(`${p.name}${v ? " · " + v.name : ""} — ${t("inventory.outOfStock")}`);
       return;
     }
+    const price = variantPrice(p, v).selling;
+    const lineName = v ? `${p.name} · ${v.name}` : p.name;
+    const lineImage = v?.image || p.image;
+    const key = (l: CartLine) => l.productId === p.id && (l.variantId ?? "") === (v?.id ?? "");
     setCart((prev) => {
-      const ex = prev.find((l) => l.productId === p.id);
+      const ex = prev.find(key);
       if (ex) {
         return prev.map((l) =>
-          l.productId === p.id
-            ? { ...l, quantity: Math.min(l.quantity + qty, p.stock) }
-            : l
+          key(l) ? { ...l, quantity: Math.min(l.quantity + qty, stock) } : l
         );
       }
       return [
         ...prev,
-        {
-          productId: p.id,
-          name: p.name,
-          brand: p.brand,
-          unitPrice: p.sellingPrice,
-          quantity: qty,
-          image: p.image,
-        },
+        { productId: p.id, variantId: v?.id, name: lineName, brand: p.brand, unitPrice: price, quantity: qty, image: lineImage },
       ];
     });
+  };
+
+  const onProductClick = (p: Product) => {
+    if (p.variants && p.variants.length > 0) {
+      setVariantPick(p);
+    } else {
+      addLine(p);
+    }
   };
 
   const handleSearchKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       const q = search.trim();
       if (!q) return;
-      // Treat numeric input >= 6 digits as barcode
       if (/^\d{6,}$/.test(q)) {
-        const p = findByBarcode(q);
-        if (p) {
-          addToCart(p);
+        const found = findByBarcode(q);
+        if (found) {
+          addLine(found.product, found.variant);
           setSearch("");
           return;
         }
@@ -94,7 +97,7 @@ function POSPage() {
         return;
       }
       if (filtered.length > 0) {
-        addToCart(filtered[0]);
+        onProductClick(filtered[0]);
         setSearch("");
       } else {
         toast.error(t("pos.notFound"));
@@ -102,15 +105,17 @@ function POSPage() {
     }
   };
 
-  const setQty = (id: string, qty: number) => {
-    if (qty <= 0) return setCart((c) => c.filter((l) => l.productId !== id));
-    const p = products.find((x) => x.id === id);
-    const max = p ? p.stock : qty;
+  const setQty = (productId: string, variantId: string | undefined, qty: number) => {
+    if (qty <= 0) return setCart((c) => c.filter((l) => !(l.productId === productId && (l.variantId ?? "") === (variantId ?? ""))));
+    const p = products.find((x) => x.id === productId);
+    const v = p?.variants?.find((x) => x.id === variantId);
+    const max = v ? v.stock : (p ? p.stock : qty);
     setCart((c) =>
-      c.map((l) => (l.productId === id ? { ...l, quantity: Math.min(qty, max) } : l))
+      c.map((l) => (l.productId === productId && (l.variantId ?? "") === (variantId ?? "") ? { ...l, quantity: Math.min(qty, max) } : l))
     );
   };
-  const remove = (id: string) => setCart((c) => c.filter((l) => l.productId !== id));
+  const remove = (productId: string, variantId: string | undefined) =>
+    setCart((c) => c.filter((l) => !(l.productId === productId && (l.variantId ?? "") === (variantId ?? ""))));
   const clear = () => setCart([]);
 
   const subtotal = cart.reduce((a, l) => a + l.unitPrice * l.quantity, 0);
@@ -130,25 +135,14 @@ function POSPage() {
   };
 
   const confirmCredit = () => {
-    if (!custName.trim()) {
-      toast.error(t("customers.customerName"));
-      return;
-    }
+    if (!custName.trim()) { toast.error(t("customers.customerName")); return; }
     recordCredit(custName.trim(), custPhone.trim(), cart);
-    toast.success(t("pos.creditSaved"), {
-      description: `${custName} — ${formatDA(subtotal)}`,
-    });
-    setCart([]);
-    setCustName("");
-    setCustPhone("");
-    setCreditOpen(false);
+    toast.success(t("pos.creditSaved"), { description: `${custName} — ${formatDA(subtotal)}` });
+    setCart([]); setCustName(""); setCustPhone(""); setCreditOpen(false);
     searchRef.current?.focus();
   };
 
-  const onPrint = () => {
-    if (cart.length === 0) return;
-    window.print();
-  };
+  const onPrint = () => { if (cart.length === 0) return; window.print(); };
 
   return (
     <AppLayout title={t("pos.title")}>
@@ -178,36 +172,36 @@ function POSPage() {
             </button>
           </div>
 
-          {/* Categories tabs */}
           <div className="px-3 py-2 border-b bg-card flex gap-1 overflow-x-auto">
             <CatChip active={activeCat === "all"} onClick={() => setActiveCat("all")}>
               {t("common.all")}
             </CatChip>
             {categories.map((c) => (
-              <CatChip
-                key={c.id}
-                active={activeCat === c.id}
-                onClick={() => setActiveCat(c.id)}
-              >
+              <CatChip key={c.id} active={activeCat === c.id} onClick={() => setActiveCat(c.id)}>
                 {c.name}
               </CatChip>
             ))}
           </div>
 
-          {/* Product grid */}
           <div className="flex-1 overflow-auto p-3">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
               {filtered.map((p) => {
-                const low = p.stock <= p.minStock;
-                const out = p.stock <= 0;
+                const totalStock = productTotalStock(p);
+                const out = totalStock <= 0;
+                const hasVariants = !!(p.variants && p.variants.length > 0);
                 return (
                   <button
                     key={p.id}
                     type="button"
                     disabled={out}
-                    onClick={() => addToCart(p)}
-                    className={`group text-start bg-card border rounded-lg p-2 hover:border-primary hover:shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed`}
+                    onClick={() => onProductClick(p)}
+                    className="group text-start bg-card border rounded-lg p-2 hover:border-primary hover:shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed relative"
                   >
+                    {hasVariants && (
+                      <span className="absolute top-1.5 end-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">
+                        {p.variants!.length} variantes
+                      </span>
+                    )}
                     <div className="aspect-square w-full rounded-md bg-accent/40 flex items-center justify-center overflow-hidden mb-2">
                       {p.image ? (
                         <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
@@ -219,16 +213,9 @@ function POSPage() {
                     <div className="text-xs font-medium line-clamp-2 min-h-[2rem]">{p.name}</div>
                     <div className="mt-1 flex items-center justify-between">
                       <div className="text-sm font-bold num text-primary">{formatDA(p.sellingPrice)}</div>
-                      <StockBadge stock={p.stock} min={p.minStock} />
+                      <StockBadge stock={totalStock} min={p.minStock} />
                     </div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5 num">
-                      {p.barcode}
-                    </div>
-                    {(low || out) && (
-                      <div className="sr-only">
-                        {out ? t("inventory.outOfStock") : t("inventory.low")}
-                      </div>
-                    )}
+                    <div className="text-[10px] text-muted-foreground mt-0.5 num">{p.barcode}</div>
                   </button>
                 );
               })}
@@ -246,15 +233,10 @@ function POSPage() {
           <div className="h-12 px-4 border-b flex items-center justify-between">
             <div className="font-semibold flex items-center gap-2">
               <Receipt className="h-4 w-4" /> {t("pos.cart")}
-              <span className="text-xs font-normal text-muted-foreground num">
-                · {count}
-              </span>
+              <span className="text-xs font-normal text-muted-foreground num">· {count}</span>
             </div>
-            <button
-              onClick={clear}
-              disabled={cart.length === 0}
-              className="text-xs inline-flex items-center gap-1 text-muted-foreground hover:text-destructive disabled:opacity-40"
-            >
+            <button onClick={clear} disabled={cart.length === 0}
+              className="text-xs inline-flex items-center gap-1 text-muted-foreground hover:text-destructive disabled:opacity-40">
               <Trash2 className="h-3.5 w-3.5" /> {t("pos.clearCart")}
             </button>
           </div>
@@ -267,13 +249,9 @@ function POSPage() {
             ) : (
               <ul className="divide-y">
                 {cart.map((l) => (
-                  <li key={l.productId} className="p-3 flex gap-3">
+                  <li key={`${l.productId}:${l.variantId ?? ""}`} className="p-3 flex gap-3">
                     <div className="h-12 w-12 shrink-0 rounded bg-muted flex items-center justify-center overflow-hidden">
-                      {l.image ? (
-                        <img src={l.image} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
-                      )}
+                      {l.image ? <img src={l.image} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="h-5 w-5 text-muted-foreground/40" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between gap-2">
@@ -281,42 +259,22 @@ function POSPage() {
                           {l.brand && <div className="brand-badge mb-0.5">{l.brand}</div>}
                           <div className="text-sm font-medium truncate">{l.name}</div>
                         </div>
-                        <button
-                          onClick={() => remove(l.productId)}
-                          className="text-muted-foreground hover:text-destructive shrink-0"
-                          aria-label="Remove"
-                        >
+                        <button onClick={() => remove(l.productId, l.variantId)} className="text-muted-foreground hover:text-destructive shrink-0" aria-label="Remove">
                           <X className="h-4 w-4" />
                         </button>
                       </div>
-                      <div className="text-xs text-muted-foreground num">
-                        {formatDA(l.unitPrice)} × {l.quantity}
-                      </div>
+                      <div className="text-xs text-muted-foreground num">{formatDA(l.unitPrice)} × {l.quantity}</div>
                       <div className="mt-1.5 flex items-center justify-between">
                         <div className="inline-flex items-center rounded border">
-                          <button
-                            onClick={() => setQty(l.productId, l.quantity - 1)}
-                            className="h-7 w-7 inline-flex items-center justify-center hover:bg-muted"
-                          >
+                          <button onClick={() => setQty(l.productId, l.variantId, l.quantity - 1)} className="h-7 w-7 inline-flex items-center justify-center hover:bg-muted">
                             <Minus className="h-3.5 w-3.5" />
                           </button>
-                          <input
-                            value={l.quantity}
-                            onChange={(e) =>
-                              setQty(l.productId, parseInt(e.target.value) || 0)
-                            }
-                            className="w-10 h-7 text-center text-sm num bg-transparent focus:outline-none"
-                          />
-                          <button
-                            onClick={() => setQty(l.productId, l.quantity + 1)}
-                            className="h-7 w-7 inline-flex items-center justify-center hover:bg-muted"
-                          >
+                          <input value={l.quantity} onChange={(e) => setQty(l.productId, l.variantId, parseInt(e.target.value) || 0)} className="w-10 h-7 text-center text-sm num bg-transparent focus:outline-none" />
+                          <button onClick={() => setQty(l.productId, l.variantId, l.quantity + 1)} className="h-7 w-7 inline-flex items-center justify-center hover:bg-muted">
                             <Plus className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                        <div className="text-sm font-bold num">
-                          {formatDA(l.unitPrice * l.quantity)}
-                        </div>
+                        <div className="text-sm font-bold num">{formatDA(l.unitPrice * l.quantity)}</div>
                       </div>
                     </div>
                   </li>
@@ -325,7 +283,6 @@ function POSPage() {
             )}
           </div>
 
-          {/* Totals + actions */}
           <div className="border-t p-3 space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{t("common.subtotal")}</span>
@@ -335,27 +292,17 @@ function POSPage() {
               <span className="text-sm font-medium">{t("common.total")}</span>
               <span className="text-2xl font-bold num">{formatDA(subtotal)}</span>
             </div>
-
-            <button
-              onClick={onComplete}
-              disabled={cart.length === 0}
-              className="w-full h-12 rounded-md bg-success text-success-foreground font-semibold inline-flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-40"
-            >
+            <button onClick={onComplete} disabled={cart.length === 0}
+              className="w-full h-12 rounded-md bg-success text-success-foreground font-semibold inline-flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-40">
               <Receipt className="h-4 w-4" /> {t("pos.completeSale")}
             </button>
             <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={onSaveCredit}
-                disabled={cart.length === 0}
-                className="h-10 rounded-md border bg-background text-sm font-medium inline-flex items-center justify-center gap-2 hover:bg-muted disabled:opacity-40"
-              >
+              <button onClick={onSaveCredit} disabled={cart.length === 0}
+                className="h-10 rounded-md border bg-background text-sm font-medium inline-flex items-center justify-center gap-2 hover:bg-muted disabled:opacity-40">
                 <CreditCard className="h-4 w-4" /> {t("pos.saveCredit")}
               </button>
-              <button
-                onClick={onPrint}
-                disabled={cart.length === 0}
-                className="h-10 rounded-md border bg-background text-sm font-medium inline-flex items-center justify-center gap-2 hover:bg-muted disabled:opacity-40"
-              >
+              <button onClick={onPrint} disabled={cart.length === 0}
+                className="h-10 rounded-md border bg-background text-sm font-medium inline-flex items-center justify-center gap-2 hover:bg-muted disabled:opacity-40">
                 <Printer className="h-4 w-4" /> {t("pos.printInvoice")}
               </button>
             </div>
@@ -363,47 +310,64 @@ function POSPage() {
         </aside>
       </div>
 
+      {/* Variant picker */}
+      {variantPick && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setVariantPick(null)}>
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-3 border-b flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground">{t("pos.chooseVariant")}</div>
+                <h3 className="font-semibold">{variantPick.name}</h3>
+              </div>
+              <button onClick={() => setVariantPick(null)}><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-3 max-h-[60vh] overflow-auto grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {variantPick.variants!.map((v) => {
+                const out = v.stock <= 0;
+                const price = variantPrice(variantPick, v).selling;
+                return (
+                  <button key={v.id} disabled={out}
+                    onClick={() => { addLine(variantPick, v); setVariantPick(null); }}
+                    className="flex items-center gap-3 border rounded-md p-2 hover:border-primary text-start disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div className="h-12 w-12 shrink-0 rounded bg-accent/40 overflow-hidden flex items-center justify-center">
+                      {v.image ? <img src={v.image} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="h-5 w-5 text-primary/40" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{v.name}</div>
+                      <div className="text-[11px] text-muted-foreground num">{v.barcode}</div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-sm font-bold text-primary num">{formatDA(price)}</span>
+                        <StockBadge stock={v.stock} min={v.minStock} />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {creditOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
-          onClick={() => setCreditOpen(false)}
-        >
-          <div
-            className="bg-card rounded-lg shadow-lg w-full max-w-md p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setCreditOpen(false)}>
+          <div className="bg-card rounded-lg shadow-lg w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">{t("pos.saveCredit")}</h3>
-            <p className="text-sm text-muted-foreground mb-4 num">
-              {t("common.total")}: {formatDA(subtotal)}
-            </p>
+            <p className="text-sm text-muted-foreground mb-4 num">{t("common.total")}: {formatDA(subtotal)}</p>
             <div className="space-y-3">
               <Field label={t("customers.customerName")}>
-                <input
-                  autoFocus
-                  value={custName}
-                  onChange={(e) => setCustName(e.target.value)}
-                  className="w-full h-10 px-3 rounded-md border bg-background text-sm"
-                />
+                <input autoFocus value={custName} onChange={(e) => setCustName(e.target.value)}
+                  className="w-full h-10 px-3 rounded-md border bg-background text-sm" />
               </Field>
               <Field label={t("customers.customerPhone")}>
-                <input
-                  value={custPhone}
-                  onChange={(e) => setCustPhone(e.target.value)}
-                  className="w-full h-10 px-3 rounded-md border bg-background text-sm"
-                />
+                <input value={custPhone} onChange={(e) => setCustPhone(e.target.value)}
+                  className="w-full h-10 px-3 rounded-md border bg-background text-sm" />
               </Field>
             </div>
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                onClick={() => setCreditOpen(false)}
-                className="h-10 px-4 rounded-md border text-sm hover:bg-muted"
-              >
+              <button onClick={() => setCreditOpen(false)} className="h-10 px-4 rounded-md border text-sm hover:bg-muted">
                 {t("common.cancel")}
               </button>
-              <button
-                onClick={confirmCredit}
-                className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
-              >
+              <button onClick={confirmCredit} className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90">
                 {t("common.save")}
               </button>
             </div>
@@ -414,25 +378,10 @@ function POSPage() {
   );
 }
 
-function CatChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function CatChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`shrink-0 h-8 px-3 rounded-md text-xs font-medium border transition ${
-        active
-          ? "bg-primary text-primary-foreground border-primary"
-          : "bg-background hover:bg-muted"
-      }`}
-    >
+    <button type="button" onClick={onClick}
+      className={`shrink-0 h-8 px-3 rounded-md text-xs font-medium border transition ${active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"}`}>
       {children}
     </button>
   );
@@ -440,36 +389,18 @@ function CatChip({
 
 function StockBadge({ stock, min }: { stock: number; min: number }) {
   if (stock <= 0)
-    return (
-      <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground font-medium">
-        0
-      </span>
-    );
+    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground font-medium">0</span>;
   if (stock <= Math.ceil(min / 2))
-    return (
-      <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground font-medium num">
-        {stock}
-      </span>
-    );
+    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground font-medium num">{stock}</span>;
   if (stock <= min)
-    return (
-      <span className="text-[10px] px-1.5 py-0.5 rounded bg-warning text-warning-foreground font-medium num">
-        {stock}
-      </span>
-    );
-  return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium num">
-      {stock}
-    </span>
-  );
+    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-warning text-warning-foreground font-medium num">{stock}</span>;
+  return <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium num">{stock}</span>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-xs font-medium text-muted-foreground mb-1">
-        {label}
-      </span>
+      <span className="block text-xs font-medium text-muted-foreground mb-1">{label}</span>
       {children}
     </label>
   );
