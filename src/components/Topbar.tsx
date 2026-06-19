@@ -5,9 +5,11 @@ import { Clock, Globe } from "lucide-react";
 
 export function Topbar({ title }: { title: string }) {
   const { i18n } = useTranslation();
-  const [now, setNow] = useState(new Date());
+  // Render time only after mount to avoid SSR/CSR mismatch.
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
+    setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
@@ -16,9 +18,11 @@ export function Topbar({ title }: { title: string }) {
     <header className="h-14 shrink-0 bg-topbar text-topbar-foreground border-b flex items-center justify-between px-4">
       <h1 className="text-lg font-semibold">{title}</h1>
       <div className="flex items-center gap-4">
-        <div className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground num">
+        <div className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground num min-w-[12rem] justify-end" suppressHydrationWarning>
           <Clock className="h-4 w-4" />
-          {now.toLocaleString(i18n.language === "ar" ? "ar-DZ" : i18n.language)}
+          <span suppressHydrationWarning>
+            {now ? now.toLocaleString(i18n.language === "ar" ? "ar-DZ" : i18n.language) : ""}
+          </span>
         </div>
         <div className="flex items-center gap-1.5">
           <Globe className="h-4 w-4 text-muted-foreground" />
