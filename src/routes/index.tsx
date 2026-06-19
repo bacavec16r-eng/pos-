@@ -5,12 +5,12 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import {
-  TrendingUp, Calendar, AlertTriangle, Wallet, ScanBarcode, ArrowRight,
+  TrendingUp, Calendar, AlertTriangle, Wallet, ScanBarcode, ArrowRight, CalendarClock,
 } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
-import { useStore, debtRemaining } from "@/lib/store";
-import { formatDA, todayKey, monthKey } from "@/lib/format";
+import { useStore, debtRemaining, productTotalStock } from "@/lib/store";
+import { formatDA, todayKey, monthKey, daysUntil, formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Tableau de bord — Belle Beauté POS" }] }),
@@ -35,8 +35,29 @@ function Dashboard() {
   const salesMonth = sales
     .filter((s) => s.dayKey.startsWith(month))
     .reduce((a, s) => a + s.total, 0);
-  const lowStock = products.filter((p) => p.stock <= p.minStock).length;
+  const lowStock = products.filter((p) => productTotalStock(p) <= p.minStock).length;
   const unpaid = debts.reduce((a, d) => a + debtRemaining(d), 0);
+
+  // Near-expiry items, within 60 days or expired
+  const nearExpiry = (() => {
+    type Row = { id: string; name: string; variantName?: string; expiryDate: string; days: number };
+    const rows: Row[] = [];
+    for (const p of products) {
+      if (p.expiryDate) {
+        const d = daysUntil(p.expiryDate);
+        if (d !== null && d <= 60) rows.push({ id: p.id, name: p.name, expiryDate: p.expiryDate, days: d });
+      }
+      if (p.variants) {
+        for (const v of p.variants) {
+          if (v.expiryDate) {
+            const d = daysUntil(v.expiryDate);
+            if (d !== null && d <= 60) rows.push({ id: `${p.id}:${v.id}`, name: p.name, variantName: v.name, expiryDate: v.expiryDate, days: d });
+          }
+        }
+      }
+    }
+    return rows.sort((a, b) => a.days - b.days);
+  })();
 
   // Daily 7-day revenue
   const days: { day: string; total: number }[] = [];
