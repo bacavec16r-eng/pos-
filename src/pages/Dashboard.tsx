@@ -4,15 +4,17 @@ import ProductsModule from "./modules/Products";
 import ReportsModule from "./modules/Reports";
 import SettingsModule from "./modules/Settings";
 import CustomersModule from "./modules/Customers";
+import { useAuthStore } from "@store/authStore";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("pos");
+  const { user, logout } = useAuthStore();
 
   const tabs = [
     { id: "pos", label: "POS", icon: "💳", component: POSModule },
     { id: "products", label: "Products", icon: "📦", component: ProductsModule },
     { id: "customers", label: "Customers", icon: "👥", component: CustomersModule },
-    { id: "reports", label: "Reports", icon: "📈", component: ReportsModule },
+    { id: "reports", label: "Reports", icon: "📊", component: ReportsModule },
     { id: "settings", label: "Settings", icon: "⚙️", component: SettingsModule },
   ];
 
@@ -44,8 +46,18 @@ export default function Dashboard() {
           ))}
         </nav>
 
-        <div className="border-t border-gray-200 p-4 bg-gray-50">
-          <button className="w-full bg-gray-300 text-gray-800 py-2 rounded hover:bg-gray-400 transition-colors">Logout</button>
+        <div className="border-t border-gray-200 p-4 bg-gray-50 space-y-3">
+          <div className="text-sm">
+            <p className="text-gray-600">Logged in as:</p>
+            <p className="font-semibold text-gray-800">{user?.username}</p>
+            <p className="text-gray-600 text-xs">Role: {user?.role}</p>
+          </div>
+          <button
+            onClick={logout}
+            className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 transition-colors font-medium"
+          >
+            Logout
+          </button>
         </div>
       </div>
 

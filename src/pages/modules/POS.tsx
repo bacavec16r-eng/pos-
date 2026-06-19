@@ -68,7 +68,7 @@ export default function POSModule() {
           discount: item.discount,
         })),
         discount_amount: customDiscount,
-        tax_amount: total * 0.1, // 10% tax
+        tax_amount: total * 0.1,
         payment_method: paymentMethod,
         notes: null,
       };
@@ -76,7 +76,6 @@ export default function POSModule() {
       const sale = await invoke("create_sale", saleRequest);
       alert("Sale completed successfully!");
       
-      // Print receipt
       if (sale && typeof sale === "object" && "id" in sale) {
         await invoke("print_receipt", { sale_id: (sale as any).id });
       }

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
 
 interface BackupRecord {
   id: string;
