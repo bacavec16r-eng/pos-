@@ -128,12 +128,41 @@ function Dashboard() {
         </Link>
 
         {/* KPI cards */}
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
           <Kpi icon={<TrendingUp className="h-4 w-4" />} label={t("dashboard.salesToday")} value={formatDA(salesToday)} tone="success" />
           <Kpi icon={<Calendar className="h-4 w-4" />} label={t("dashboard.salesMonth")} value={formatDA(salesMonth)} tone="primary" />
           <Kpi icon={<AlertTriangle className="h-4 w-4" />} label={t("dashboard.lowStockCount")} value={lowStock.toString()} tone="warning" />
+          <Kpi icon={<CalendarClock className="h-4 w-4" />} label={t("dashboard.nearExpiry")} value={nearExpiry.length.toString()} tone="destructive" />
           <Kpi icon={<Wallet className="h-4 w-4" />} label={t("dashboard.unpaidDebts")} value={formatDA(unpaid)} tone="destructive" />
         </div>
+
+        {/* Near expiry widget */}
+        {nearExpiry.length > 0 && (
+          <div className="rounded-md border bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b flex items-center justify-between">
+              <div className="text-sm font-semibold flex items-center gap-2">
+                <CalendarClock className="h-4 w-4 text-destructive" /> {t("dashboard.nearExpiry")}
+              </div>
+              <Link to="/inventory" className="text-xs text-primary hover:underline">→</Link>
+            </div>
+            <ul className="divide-y">
+              {nearExpiry.slice(0, 5).map((r) => (
+                <li key={r.id} className="px-4 py-2 flex items-center justify-between text-sm">
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{r.name}</div>
+                    {r.variantName && <div className="text-[11px] text-muted-foreground">{r.variantName}</div>}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xs text-muted-foreground num">{formatDate(r.expiryDate)}</span>
+                    <span className={`text-xs font-semibold num px-2 py-0.5 rounded ${r.days < 0 ? "bg-destructive text-destructive-foreground" : r.days <= 30 ? "bg-destructive/15 text-destructive" : "bg-warning/20 text-warning-foreground"}`}>
+                      {r.days < 0 ? `Expiré ${Math.abs(r.days)}j` : `${r.days}j`}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Charts */}
         <div className="grid gap-3 lg:grid-cols-3">
